@@ -6,6 +6,18 @@
 #define FD_SETSIZE 1024
 #endif
 
+void printset(const fd_set *set)
+{
+    int i;
+
+    for(i = 0; i < 32; i++)
+        if(FD_ISSET(i, set) == 1)
+            putchar('1');
+        else
+            putchar('0');
+    printf("\n");
+}
+
 int main(int argc, char const* argv[])
 {
     int i, maxi, maxfd, listenfd, connfd, sockfd;
@@ -16,6 +28,7 @@ int main(int argc, char const* argv[])
     char buf[MAXLINE];
     socklen_t cliaddr_len;
     struct sockaddr_in cli_addr, server_addr;
+
 
     if(argc != 2)
     {
@@ -66,7 +79,13 @@ int main(int argc, char const* argv[])
     for( ; ; )
     {
         rset = allset;         /*每次循环时都重新设置select监控信号集*/
+
+        printf("before select: ");
+        printset(&rset);
+
         nready = select(maxfd+1, &rset, NULL, NULL, NULL);
+        printf("after  select: ");
+        printset(&rset);
         printf("select return!\n");
 
         if(nready < 0)
@@ -107,7 +126,7 @@ int main(int argc, char const* argv[])
                 maxi = i;             /*更新client[]最大下标值*/
 
             if(--nready == 0)
-                continue;             /*如果没有更多的就绪描述符继续回到上面的select阻塞监听,负责处理未处理完的就绪文件描述符*/
+                continue;             //如果没有更多的就绪描述符继续回到上面的select阻塞监听,负责处理未处理完的就绪文件描述符
         }
 
         for(i=0; i <= maxi; i++){      /*检测哪个client有数据就绪*/
@@ -129,9 +148,13 @@ int main(int argc, char const* argv[])
                     close(sockfd);
                     FD_CLR(sockfd, &allset);
                     client[i] = -1;
-                }
+               }
                 else{
                     printf("接收消息失败!错误代码是%d, 错误消息是'%s'\n", errno, strerror(errno));
+                    /*close(sockfd);*/
+                    /*FD_CLR(sockfd, &allset);*/
+                    /*client[i] = -1;*/
+                    /*exit(1);*/
                 }
 
                 if(--nready == 0)

@@ -70,7 +70,7 @@ int main(int argc, char const* argv[])
     }
 
     //结束通讯
-    close(sockfd);
+    //close(sockfd);
 
     return 0;
 }
