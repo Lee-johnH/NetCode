@@ -1,4 +1,5 @@
 #include "account.h"
+#include "pv.h"
 #include <unistd.h>
 #include <sys/shm.h>
 #include <stdlib.h>
@@ -26,6 +27,13 @@ int main(void)
 
     a->code = 10001;
     a->balance = 10000;
+
+    //创建信号量集并初始化(1个信号量/信号灯，初值为1)
+    a->semid = I(1, 1);
+    if(a->semid < 0)
+        per_exit("I() init error!");
+
+
     printf("balance: %f\n", a->balance);
 
     pid_t pid;
@@ -39,8 +47,11 @@ int main(void)
 
         //对共享内存的操作要在解除映射之前
         printf("balance: %f\n", a->balance);
-
+        //销毁信号量集
+        D(a->semid);
+        //解除共享内存的映射
         shmdt(a);
+        //释放共享内存
         shmctl(shmid, IPC_RMID, NULL);
     }
     else    //子进程
@@ -48,6 +59,7 @@ int main(void)
         //子进程也执行取款操作
         double amt = withdraw(a, 10000);
         printf("pid: %d withdraw %f from code %d\n", getpid(), amt, a->code);
+        //解除共享内存的映射
         shmdt(a);
     }
 
